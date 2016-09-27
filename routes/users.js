@@ -18,40 +18,40 @@ router.get('/login', function(req, res, next) {
 });
 
 router.post('/login',
-    passport.authenticate('local', {failureRedirect:'/users/login'}),
-        function(req, res){
-          req.flash('Success', 'You are now logged in');
-          res.redirect('/');
-        });
+    passport.authenticate('local',{failureRedirect:'/users/login', failureFlash: 'Invalid username or password'}),
+    function(req, res) {
+        req.flash('success', 'You are now logged in');
+        res.redirect('/');
+    });
+
 
 passport.serializeUser(function(user, done) {
-  done(null, user.id);
+    done(null, user.id);
 });
 
 passport.deserializeUser(function(id, done) {
-  User.getUserById(id, function(err, user) {
-    done(err, user);
-  });
+    User.getUserById(id, function(err, user) {
+        done(err, user);
+    });
 });
 
-passport.use(new LocalStrategy(
-    function(username, password, done) {
-      User.getUserByUsername({ username: username }, function (err, user) {
-        if (err) { return done(err); }
-        if (!user) {
-          return done(null, false, { message: 'Unknown username.' });
+passport.use(new LocalStrategy(function(username, password, done){
+    User.getUserByUsername(username, function(err, user){
+        if(err) throw err;
+        if(!user){
+            return done(null, false, {message: 'Unknown User'});
         }
+
         User.comparePassword(password, user.password, function(err, isMatch){
-           if(err) return done(err);
-          if(isMatch){
-            return done(null, user);
-          }else{
-            return done(null, false, {message: 'Incorrect Password'});
-          }
+            if(err) return done(err);
+            if(isMatch){
+                return done(null, user);
+            } else {
+                return done(null, false, {message:'Invalid Password'});
+            }
         });
-      });
-    }
-));
+    });
+}));
 
 router.post('/register', upload.single('profileimage'), function(req, res, next) {
   var name = req.body.name;
@@ -96,6 +96,12 @@ router.post('/register', upload.single('profileimage'), function(req, res, next)
     res.location('/');
     res.redirect('/');
   }
+});
+
+router.get('/logout', function(req, res){
+    req.logout();
+    req.flash('sucess', 'you are not logged out');
+    res.redirect('/users/login');
 });
 
 module.exports = router;
